@@ -3,8 +3,14 @@ var Yelp = require('./yelp.js');
 
 
 var yelp = Yelp();
-yelp.searchRoute().then(function(data, response) {
+yelp.searchRoute().then(function(data) {
 
-	console.log(data);
+	var businesses = data.businesses;
 
-});
+	console.log(_.pluck(businesses, 'name'));
+
+})
+.catch(function(error) {
+	console.error('ERROR! ', error);
+})
+.done();
