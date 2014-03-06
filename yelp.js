@@ -12,6 +12,8 @@ var yelp_config = require('./config/yelp-api-keys.json');
 //   console.log(data);
 // });
 
+// Search API
+// See http://www.yelp.com/developers/documentation/v2/search_api
 
 // Define the factory
 function newYelp() {
@@ -20,23 +22,22 @@ function newYelp() {
 
 	var yelp = require("yelp").createClient(yelp_config);
 
-
-	return {
-
-    // Define a function with async internals
-    searchRoute: function searchRoute(route_points) {
-
-		// See http://www.yelp.com/developers/documentation/v2/search_api
+	var searchBox = function searchBox(box) {
+		
 		return yelp.searchPromise({
-			term: 'pizza',
+			term: 'food',
 			limit: 3,
-			location: 'san francisco'
+			bounds: box
 		}).then(function(foo) {
 			return foo;
 		});
+	};
 
-    }
-
+	return {
+		searchBox: searchBox,
+		searchRoute: function searchRoute(route_points) {
+			return searchBox('37.900000,-122.500000|37.788022,-122.399797');
+		}
   };
 }
 
