@@ -3,6 +3,7 @@ var Yelp = require('./yelp.js');
 var yelp = Yelp();
 
 
+
 var route = [
 {
 	'latitude':38.930145,		// kenyon street
@@ -13,6 +14,8 @@ var route = [
 	'longitude':-76.981679
 }
 ];
+
+console.log(JSON.stringify(route));
 
 yelp.searchRoute(route).then(function(data) {
 	console.log(_.pluck(data, 'name'));
