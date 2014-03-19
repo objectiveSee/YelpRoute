@@ -78,7 +78,10 @@ function newPolyroute() {
 	return {
 		convertRouteToBoxes : convertRouteToBoxesNaive,
 		findObjectsAlongRoute: function searchRoute(route, objects, stroke) {
-			return objects;
+			var objects_with_coordinates = _.filter(objects, function(obj) {
+				return obj.location.coordinates;
+			});
+			return objects_with_coordinates;
 		}
 	};
 }

@@ -1,21 +1,24 @@
 require('./globals.js');
 
 var geocoder = require('geocoder');
-var geocoderProvider = 'google';
+var geocoderProvider = 'openstreetmap'; // openstreetmap, google, mapquest
 var httpAdapter = 'http';
+var geocode_key;
+if ( geocoderProvider === "google") {
+	geocode_key = env.google_geocode_api_key;
+} else if ( geocoderProvider === "mapquest") {
+	geocode_key = env.mapquest_geocode_api_key;
+}
 var extra = {
-    apiKey: 'AIzaSyAzn_oKdewnuozhqhOjQ3RgT5DmSEwlwK0', // for map quest
-    formatter: null         // 'gpx', 'string', ...
+    apiKey: geocode_key,
+    formatter: null
 };
 var geocoder2 = require('node-geocoder').getGeocoder(geocoderProvider, httpAdapter, extra);
 
 
-// Request API access: http://www.yelp.com/developers/getting_started/api_access
-// for your API keys
-var yelp_config = require('./config/yelp-api-keys.json');
 var geolib = require('geolib');
 
-var YELP_MAX_RESULTS_PER_QUERY = 5;	// says yelp.
+var YELP_MAX_RESULTS_PER_QUERY = 20;	// says yelp.
 var SEARCH_LIMIT_PER_QUERY = YELP_MAX_RESULTS_PER_QUERY;
 var SEARCH_TERM = 'food';
 
@@ -23,17 +26,18 @@ var Polyroute = require('./polyroute.js');
 var ROUTE_WIDTH = 20;		// in meters
 
 
-
-// // See http://www.yelp.com/developers/documentation/v2/business
-// yelp.business("yelp-san-francisco", function(error, data) {
-//   console.log(error);
-//   console.log(data);
-// });
-// Search API
+// See http://www.yelp.com/developers/documentation/v2/business
 // See http://www.yelp.com/developers/documentation/v2/search_api
 
 // Define the factory
 function newYelp() {
+
+	var yelp_config = {
+		"consumer_key": env.yelp_consumer_key,
+		"consumer_secret": env.yelp_consumer_secret,
+		"token": env.yelp_token,
+		"token_secret": env.yelp_token_secret
+	};
 
 	var yelp = require("yelp").createClient(yelp_config);
 	var polyroute = Polyroute();
@@ -54,6 +58,7 @@ function newYelp() {
 		var objects = [];
 		_.each(results, function(result) {
 			objects = _.union(result.businesses);
+
 		});
 		// console.log('BUSINESSES =', JSON.stringify(objects));
 		return objects;
@@ -73,7 +78,7 @@ function newYelp() {
 					business.location.coordinates = point;
 					// console.log('business is now', util.inspect(business));
 				} else {
-					console.error('GEO failed for '+search_location+', Response = '+util.inspect(results));
+					console.error('Warning: Geocode failed for '+search_location+', Response = '+util.inspect(results));
 				}
 				return business;
 			});

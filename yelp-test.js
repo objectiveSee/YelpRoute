@@ -21,6 +21,6 @@ yelp.searchRoute(route).then(function(data) {
 	console.log(_.pluck(data, 'name'));
 })
 .catch(function(error) {
-	console.error('ERROR! ', error);
+	console.error('YELP TEST ERROR! Err=', error);
 })
 .done();
