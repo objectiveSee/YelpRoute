@@ -6,11 +6,11 @@ var yelp = Yelp();
 
 var route = [
 {
-	'latitude':38.930145,		// kenyon street
+	'latitude':38.930145,
 	'longitude':-77.031955
 },
 {
-	'latitude':38.878659,		// white house
+	'latitude':38.878659,
 	'longitude':-76.981679
 }
 ];
