@@ -54,33 +54,6 @@ var boxExpand = function (box, point, stroke) {
 // Define the factory
 function newPolyroute() {
 
-	var convertRouteToBoxesNaive = function (route, stroke) {
-
-		// TODO: this is a naive implementation. Assuming latitude is positive and longitude is negative. Returning 1 box only.
-		var bottom = 10000;
-		var left = 10000;
-		var right = -1000;
-		var top = -1000;
-		_.each(route, function(marker) {
-			if ( marker.longitude < left ) {
-				left = marker.longitude;
-			}
-			if ( marker.longitude > right ) {
-				right = marker.longitude;
-			}
-			if ( marker.latitude < bottom ) {
-				bottom = marker.latitude;
-			}
-			if ( marker.longitude > top ) {
-				top = marker.latitude;
-			}
-		});
-		console.log(bottom,left,right,top);
-		// Yelp uses the following format to represent a box: bounds=sw_latitude,sw_longitude|ne_latitude,ne_longitude
-		var aBox = bottom+","+left+"|"+top+","+right;
-		return [aBox];
-	};
-
 	var convertRouteToBoxes = function (route, stroke) {
 
 		console.log('converting boxes...');
