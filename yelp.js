@@ -19,15 +19,53 @@ var geocoder2 = require('node-geocoder').getGeocoder(geocoderProvider, httpAdapt
 var geolib = require('geolib');
 
 var YELP_MAX_RESULTS_PER_QUERY = 20;	// says yelp.
-var SEARCH_LIMIT_PER_QUERY = YELP_MAX_RESULTS_PER_QUERY;
+
+var SEARCH_LIMIT_PER_QUERY = 5;		// helps to avoid request timeout due to huge number of results needing a seperate geocode request
 var SEARCH_TERM = 'food';
 
 var Polyroute = require('./polyroute.js');
-var ROUTE_WIDTH = 20;		// in meters
+
+
+var METERS_PER_LATITUDE_ESTIMATED = 111131.745;
+
+var ROUTE_WIDTH = 1000 / METERS_PER_LATITUDE_ESTIMATED;		// in degrees
 
 
 // See http://www.yelp.com/developers/documentation/v2/business
 // See http://www.yelp.com/developers/documentation/v2/search_api
+
+var compressResults = function compressResults(results) {	// flattens results from multipe Yelp api responses into a single, unique array of responses
+	var objects = [];
+	_.each(results, function(result) {
+		console.log('result has '+result.businesses.length+' sub-results');
+		console.log('names are: ', _.pluck(result.businesses, 'name'));
+		objects = _.union(result.businesses, objects);
+	});
+	// console.log('BUSINESSES =', JSON.stringify(objects));
+	return objects;
+};
+
+var geocodeResults = function geocodeResults(results) {
+	// console.log('geocoding...');
+	var promises = _.map(results, function(business) {
+		// console.log('business info to geocode is', business);
+		var search_location = business.location.address + ',' + business.location.city + ',' + business.location.state_code;
+		// console.log('location name is', search_location);
+		return geocoder2.geocode(search_location)
+		.then(function(results) {
+			if ( results && results.length > 0 ) {
+				// console.log(results[0]);
+				var point = {latitude: results[0].latitude, longitude: results[0].longitude};
+				business.location.coordinates = point;
+				// console.log('business is now', util.inspect(business));
+			} else {
+				console.error('Warning: Geocode failed for '+search_location+', Response = '+util.inspect(results));
+			}
+			return business;
+		});
+	});
+	return Q.all(promises);
+};
 
 // Define the factory
 function newYelp() {
@@ -49,41 +87,9 @@ function newYelp() {
 			limit: SEARCH_LIMIT_PER_QUERY,
 			bounds: box
 		}).then(function(foo) {
-			console.log('Box finished. Found '+foo.businesses.length);
+			console.log('Found '+foo.businesses.length+' businesses in a box: '+util.inspect(box));
 			return foo;
 		});
-	};
-
-	var compressResults = function compressResults(results) {	// flattens results from multipe Yelp api responses into a single, unique array of responses
-		var objects = [];
-		_.each(results, function(result) {
-			objects = _.union(result.businesses);
-
-		});
-		// console.log('BUSINESSES =', JSON.stringify(objects));
-		return objects;
-	};
-
-	var geocodeResults = function geocodeResults(results) {
-		// console.log('geocoding...');
-		var promises = _.map(results, function(business) {
-			// console.log('business info to geocode is', business);
-			var search_location = business.location.address + ',' + business.location.city + ',' + business.location.state_code;
-			// console.log('location name is', search_location);
-			return geocoder2.geocode(search_location)
-			.then(function(results) {
-				if ( results && results.length > 0 ) {
-					// console.log(results[0]);
-					var point = {latitude: results[0].latitude, longitude: results[0].longitude};
-					business.location.coordinates = point;
-					// console.log('business is now', util.inspect(business));
-				} else {
-					console.error('Warning: Geocode failed for '+search_location+', Response = '+util.inspect(results));
-				}
-				return business;
-			});
-		});
-		return Q.all(promises);
 	};
 
 	return {

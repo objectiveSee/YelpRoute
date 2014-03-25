@@ -1,9 +1,12 @@
 require('./globals.js');
 var geolib = require('geolib');
+var geopoint = require('geopoint');
+
+var MAX_BOX_SIZE = 0.002;	//.03,.04 diff of stroke
 
 
 // From http://www.movable-type.co.uk/scripts/latlong.html
-var bearingFromPointsInRadians = function (pointA, pointB) {
+var bearingFromPointsInRadians = function (pointA, pointB) {	// TODO: naive. doesnt consider radius of earth
 	var lat1 = pointA.latitude;
 	var lon1 = pointA.longitude;
 	var lat2 = pointB.latitude;
@@ -18,6 +21,35 @@ var bearingFromPointsInRadians = function (pointA, pointB) {
 	return brng;
 };
 
+var latitudeModifyByStroke = function(latitude, stroke) {	// TODO: naive. doesnt consider radius of earth
+	return latitude + stroke;
+};
+var longitudeModifyByStroke = function(longitude, stroke) {	// TODO: naive. doesnt consider radius of earth
+	return longitude + stroke;
+};
+var boxToYelp = function(box) {
+	return box[0]+','+box[1]+'|'+box[2]+','+box[3];
+};
+var boxSize = function(box) {	// TODO: naive. doesnt consider radius of earth
+	var x = box[2] - box[0];
+	var y = box[3] - box[1];
+	return x*y;
+};
+var boxExpand = function (box, point, stroke) {
+
+	var lat_minus = latitudeModifyByStroke(point.latitude, -stroke);
+	var lat_plus = latitudeModifyByStroke(point.latitude, stroke);
+	var lon_minus = latitudeModifyByStroke(point.longitude, -stroke);
+	var lon_plus = latitudeModifyByStroke(point.longitude, stroke);
+
+	if ( !box ) {
+		return [lat_minus, lon_minus, lat_plus, lon_plus];
+	}
+	return [Math.min(lat_minus, box[0]),
+	Math.min(lon_minus, box[1]),
+	Math.max(lat_plus, box[2]),
+	Math.max(lon_plus, box[3])];
+};
 
 // Define the factory
 function newPolyroute() {
@@ -51,32 +83,46 @@ function newPolyroute() {
 
 	var convertRouteToBoxes = function (route, stroke) {
 
+		console.log('converting boxes...');
 		var length = route.length;
-		_.each(route, function(item) {
-			// console.log(item.latitude+','+item.longitude);
-		});
 		console.log('route has '+length+' items. Length is '+geolib.getPathLength(route)/1000.0+' km');
-		var p0 = route[0];
-		var p1 = {latitude: route[1].latitude, longitude: route[0].longitude};
-		// var p0 = {latitude: p1.latitude - stroke, longitude: p1.longitude - stroke};
-		var bearing = bearingFromPointsInRadians(p0, p1);
-		console.log('Bearing is '+bearing+' radians.');
-		var reverse_bearing = bearing - Math.PI;
 
-		var r = Math.sqrt(2) * stroke;
-		var x = Math.cos(reverse_bearing) * r;
-		var y = Math.sin(reverse_bearing) * r;
-		console.log('x='+x+', y='+y+', r='+r);
+		// _.each(route, function(item) {
+			// console.log('route $ '+item.latitude+','+item.longitude);
+		// });
 
-		var newPoint = {latitude: p0.latitude + x, longitude: p0.longitude + y};
-		console.log('First Point:', p0);
-		console.log('New Point:', newPoint);
+		var j = 0;
+		var boxes = [];
+		var current_box;
 
+		for ( var i = 0; i < length; i++ ) {
+
+			var newbox = boxExpand(current_box, route[i], stroke);
+			
+			var box_size = boxSize(newbox);
+			// console.log('BOX SIZE is'+ box_size);
+
+			if ( box_size > MAX_BOX_SIZE ) {
+				boxes.push(boxToYelp(current_box));
+				current_box = boxExpand(undefined, route[i], stroke);	// make box starting w/ this point
+			} else {
+				current_box = newbox;
+			}
+		}
+		if ( current_box ) {
+			boxes.push(boxToYelp(current_box));
+		}
+
+		console.log('Route has '+boxes.length+' boxes!');
+		_.each(boxes, function (box) {
+			console.log('box is: '+util.inspect(box));
+		});
+		return boxes;
 	};
 
 
 	return {
-		convertRouteToBoxes : convertRouteToBoxesNaive,
+		convertRouteToBoxes : convertRouteToBoxes,
 		findObjectsAlongRoute: function searchRoute(route, objects, stroke) {
 			var objects_with_coordinates = _.filter(objects, function(obj) {
 				return obj.location.coordinates;

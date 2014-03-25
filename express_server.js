@@ -23,7 +23,7 @@ app.get('/search', function(req, res) {
 		res.send(500, {error: 'Missing route'});
 	} else {
 
-		console.log('query =', route);
+		// console.log('query =', route);
 
 		var route_points = [];
 		var last;
@@ -36,7 +36,7 @@ app.get('/search', function(req, res) {
 				last = point;
 			}
 		});
-		console.log('route points=', route_points);
+		// console.log('route points=', route_points);
 
 
 		yelp.searchRoute(route_points)
