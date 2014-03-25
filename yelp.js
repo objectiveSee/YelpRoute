@@ -20,7 +20,7 @@ var geolib = require('geolib');
 
 var YELP_MAX_RESULTS_PER_QUERY = 20;	// says yelp.
 
-var SEARCH_LIMIT_PER_QUERY = 5;		// helps to avoid request timeout due to huge number of results needing a seperate geocode request
+var SEARCH_LIMIT_PER_QUERY = YELP_MAX_RESULTS_PER_QUERY;		// helps to avoid request timeout due to huge number of results needing a seperate geocode request
 var SEARCH_TERM = 'food';
 
 var Polyroute = require('./polyroute.js');
@@ -46,7 +46,7 @@ var compressResults = function compressResults(results) {	// flattens results fr
 };
 
 var geocodeResults = function geocodeResults(results) {
-	// console.log('geocoding...');
+	console.log('geocoding...');
 	var promises = _.map(results, function(business) {
 		// console.log('business info to geocode is', business);
 		var search_location = business.location.address + ',' + business.location.city + ',' + business.location.state_code;
